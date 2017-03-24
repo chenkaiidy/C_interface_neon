@@ -22,6 +22,7 @@
 #include <iostream>
 #include <vector>
 #include <type_traits>
+#include <cublas_v2.h>
 #include "nervana_c_api.h"
 
 void test_hgemm(short* d_a, short* d_b, short* d_c, bool a_t, bool b_t, int size) {
@@ -41,7 +42,9 @@ void test_hgemm(short* d_a, short* d_b, short* d_c, bool a_t, bool b_t, int size
 }
 
 void test_sgemm(float* d_a, float* d_b, float* d_c, bool a_t, bool b_t, int size) {
-     unsigned int rand =12;
+    unsigned int rand =12;
+    float alpha = 1.0f;
+    float beta = 0.0f;
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
@@ -60,8 +63,27 @@ void test_sgemm(float* d_a, float* d_b, float* d_c, bool a_t, bool b_t, int size
         if (h_c[i] != size)
             std::cout << "Mismatch at " << i << " " << h_c[i] << " " << size << std::endl;
     }
-    std::cout << "Matrix size: " << size << "\telapsedTime: " << elapsedTime  << std::endl;
+    std::cout << "neon:   Matrix size: " << size << "\telapsedTime: " << elapsedTime  << std::endl;
+    free(h_c);
 
+    //cublas
+    cublasHandle_t handle;
+    cublasCreate(&handle);
+    cudaEventRecord(start,0);
+    cublasSgemm(handle, CUBLAS_OP_N,CUBLAS_OP_N, size, size, size, &alpha, d_b, size, d_a, size, &beta, d_c, size);
+    cudaEventRecord(stop,0);
+    cudaEventSynchronize(stop);
+    //float elapsedTime;
+    cudaEventElapsedTime(&elapsedTime, start, stop);
+    h_c = (float *)malloc(sizeof(float) * size * size);
+    cudaMemcpy(h_c, d_c, sizeof(float) * size * size, cudaMemcpyDeviceToHost);
+    for (int i = 0; i < size * size; ++i) {
+        if (h_c[i] != size)
+            std::cout << "Mismatch at " << i << " " << h_c[i] << " " << size << std::endl;
+    }
+    std::cout << "Cublas: Matrix size: " << size << "\telapsedTime: " << elapsedTime  << std::endl;
+
+    cublasDestroy(handle);
     free(h_c);
 }
 

@@ -244,9 +244,9 @@ extern "C" bool nervana_sgemm(float *A, float *B, float *C,
     name += trans;
 
     int sizeA, sizeB, threads;
-    sizeA = 32;
+    sizeA = 128;
     sizeB = 128;
-    threads = 128;
+    threads = 256;
 
     //std::tie(sizeA, sizeB, threads) = get_grid_dimensions(grid, m, n, sm_count, trans);
     
@@ -256,7 +256,7 @@ extern "C" bool nervana_sgemm(float *A, float *B, float *C,
     //if ( (trans == "tn" && m % 4 == 0  && n % 4 == 0) ||
     //     (trans == "nn" && k % k_vec == 0 && n % 4 == 0) ||
     //     (trans == "nt" && k % k_vec == 0)) {
-    //     name += "_vec";
+         name += "_vec";
     //}
 
     int gridA = m / sizeA + (m % sizeA != 0);
